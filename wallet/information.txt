@@ -1,0 +1,17 @@
+From
+Wallet address: tbnb1hcw84c527lr7mg902anlwwvmv3yhedh0gk25wl
+
+wallet password: Binance000#
+
+keystore: ee4bf1a3-edfd-46f3-8542-ef14d2a3d00a_keystore
+
+BNB
+Binance Chain Native Token
+200
+200
+
+
+To
+Wallet address: tbnb1stkll377su35dq3d3sdcf2rm8ny660j88an804
+Wallet password: BinanceTest@2019
+keystore: 5dd20b64-0eb7-4939-a0ae-b81125a7b5c4_keystore
