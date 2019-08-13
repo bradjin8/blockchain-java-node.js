@@ -4,10 +4,13 @@ import com.binance.dex.api.client.BinanceDexApiClientFactory;
 import com.binance.dex.api.client.BinanceDexApiRestClient;
 import com.binance.dex.api.client.BinanceDexEnvironment;
 import com.binance.dex.api.client.Wallet;
-import com.binance.dex.api.client.domain.Account;
-import com.binance.dex.api.client.domain.TransactionMetadata;
+import com.binance.dex.api.client.domain.*;
+import com.binance.dex.api.client.domain.broadcast.NewOrder;
 import com.binance.dex.api.client.domain.broadcast.TransactionOption;
 import com.binance.dex.api.client.domain.broadcast.Transfer;
+import com.binance.dex.api.client.encoding.Crypto;
+import com.headit.binance.model.TransactionRequest;
+import com.headit.binance.model.TransactionResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -47,17 +50,16 @@ public class DexBinanceService {
     }
 
 
-    List<TransactionMetadata> doTransfer() {
+    List<TransactionMetadata> doTransfer(String addressTo, String transferAmount, String coin, String memo) {
 
         Transfer transfer = new Transfer();
         transfer.setFromAddress(walletAddressFrom);
-        transfer.setToAddress(walletAddressTo);
-        transfer.setAmount("1.0");
-        transfer.setCoin("BNB");
+        transfer.setToAddress(addressTo);
+        transfer.setAmount(transferAmount);
+        transfer.setCoin(coin);
 
         TransactionOption transactionOption = TransactionOption.DEFAULT_INSTANCE;
-        transactionOption.setMemo("Test Transaction");
-
+        transactionOption.setMemo(memo);
 
         List<TransactionMetadata> ret = new ArrayList<>();
         try {
@@ -67,5 +69,46 @@ public class DexBinanceService {
             e.printStackTrace();
         }
         return ret;
+    }
+
+    List<TransactionMetadata> doTestTransfer() {
+        return doTransfer("1.0", this.walletAddressTo, "BNB", "Test Transaction");
+    }
+
+    TransactionResponse signTransaction(TransactionRequest req) {
+        List<String> mnemonicCodeWords = Crypto.generateMnemonicCode();
+        Wallet wallet;
+        TransactionResponse transactionResponse = new TransactionResponse();
+        NewOrder newOrder;
+        try {
+            wallet = Wallet.createWalletFromMnemonicCode(mnemonicCodeWords, BinanceDexEnvironment.TEST_NET);
+
+            if (wallet != null) {
+                newOrder = new NewOrder();
+                newOrder.setTimeInForce(TimeInForce.GTE);
+                newOrder.setSide(OrderSide.SELL);
+                newOrder.setPrice("0.15432");
+                newOrder.setQuantity("1.0");
+                newOrder.setSymbol("BNB_ETH.B-261");
+                newOrder.setSender(this.walletAddressFrom);
+                newOrder.setOrderType(OrderType.LIMIT);
+
+                TransactionOption transactionOption = TransactionOption.DEFAULT_INSTANCE;
+                List<TransactionMetadata> ret = binanceDexApiRestClient.newOrder(newOrder, this.walletTo, transactionOption, true);
+                if (ret.size() > 0) {
+                    TransactionMetadata transactionMetadata = ret.get(0);
+                    transactionMetadata.isOk();
+
+                    //TODO: 
+                    transactionResponse.setAddressTo(req.getAddressTo());
+                    transactionResponse.setAddressFrom(this.walletAddressFrom);
+                    transactionResponse.setAmount(req.getAmount());
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        return transactionResponse;
     }
 }
